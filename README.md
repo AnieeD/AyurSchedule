@@ -74,6 +74,10 @@ The first hospital member must use the private setup invite generated when the s
 
 Patients can sign up without an invite and receive a new patient ID. To access an existing clinic record, a hospital member must create a **Patient Record Invite** for that patient ID and the patient's account email. The patient can redeem it at signup or through **Link My Existing Patient Record**. Entering another patient's ID or changing interface state cannot grant access to their records. Account lists and workbook backups never include password hashes or login tokens.
 
+### Password recovery
+
+After signup, save the recovery code shown under **Account Recovery** in the sidebar. Existing users can generate a code there while signed in. If you forget your password, open **Forgot Password** on the login screen and enter your account email, recovery code, and a new password. Each recovery code works once; generating a new one invalidates the previous code. A successful reset signs out all existing sessions. Recovery codes are stored only as hashes, so the clinic cannot display a lost code. If you lose both your password and recovery code, an administrator with local database access must recover the account.
+
 Passwords use Argon2id hashes. Sessions use random tokens stored as hashes, expire after eight hours or 30 minutes idle, and are revoked on logout or account deactivation. Five failed login attempts lock that email's login for 15 minutes. Sessions are tied to the current Streamlit browser connection; a browser reload requires logging in again. All staff operations, fragment reruns, and private download generation recheck the database session and role.
 
 Only schedules with zero hard violations are made available to patients. Booking/resource changes mark previously shared timings as pending until the hospital generates a fresh valid schedule. Excel replacement preserves user accounts but unlinks patient medical records and revokes unused patient record invites, since imported patient IDs may belong to different people. Issue new patient invites after replacing the dataset. Authentication records are never part of the hospital workbook.
