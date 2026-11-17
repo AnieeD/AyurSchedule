@@ -80,6 +80,19 @@ def test_member_invites_are_required_email_bound_single_use_and_role_bound(accou
         auth.register_user("Again", "again@example.com", PASSWORD, "hospital", invite_code=invite, db_path=db_path)
 
 
+def test_deployed_first_member_uses_private_setup_secret(tmp_path):
+    db_path = str(tmp_path / "deployed.db")
+    setup_code = "A-private-random-deployment-setup-code-12345"
+    database.init_db(db_path)
+    auth.initialize_auth(db_path, setup_code=setup_code)
+    auth.initialize_auth(db_path, setup_code=setup_code)
+    assert not (tmp_path / ".streamlit" / "hospital_setup_invite.txt").exists()
+    auth.register_user("First Member", "first@example.com", PASSWORD, "hospital", invite_code=setup_code, db_path=db_path)
+    assert auth.session_user(auth.login("first@example.com", PASSWORD, db_path), db_path)["role"] == "hospital"
+    with pytest.raises(ValueError):
+        auth.register_user("Second Member", "second@example.com", PASSWORD, "hospital", invite_code=setup_code, db_path=db_path)
+
+
 def test_patient_can_self_register_but_cannot_claim_an_existing_id(accounts):
     db_path, _, _, _ = accounts
     auth.register_user("New Patient", "new.patient@example.com", PASSWORD, "patient", gender="F", db_path=db_path)
