@@ -12,10 +12,13 @@ def logout():
     st.session_state.clear()
 
 
-def _start_session(email, password):
+def _start_session(email, password, issue_recovery_code=False):
     token = auth.login(email, password)
+    recovery_code = auth.create_recovery_code(token) if issue_recovery_code else None
     st.session_state.clear()
     st.session_state["auth_token"] = token
+    if recovery_code:
+        st.session_state["recovery_code_once"] = recovery_code
     st.rerun()
 
 
@@ -31,7 +34,7 @@ def require_login():
     st.caption("Hospital scheduling and your personal therapy appointments")
     if "login_notice" in st.session_state:
         st.info(st.session_state.pop("login_notice"))
-    login_tab, signup_tab = st.tabs(["Login", "Sign Up"], key="auth_page", on_change="rerun")
+    login_tab, signup_tab, recovery_tab = st.tabs(["Login", "Sign Up", "Forgot Password"], key="auth_page", on_change="rerun")
     with login_tab:
         st.subheader("Log in to your account")
         with st.form("login_form", clear_on_submit=True):
@@ -63,9 +66,26 @@ def require_login():
                     auth.register_user(name, signup_email, signup_password,
                                        "hospital" if account_type == "Hospital Member" else "patient",
                                        gender=gender, invite_code=invite)
-                    _start_session(signup_email, signup_password)
+                    _start_session(signup_email, signup_password, issue_recovery_code=True)
                 except ValueError as exc:
                     st.error(str(exc))
+    with recovery_tab:
+        st.subheader("Reset your password")
+        st.caption("Enter the recovery code saved when your account was created or from Account Recovery while signed in.")
+        with st.form("password_recovery_form", clear_on_submit=True):
+            email = st.text_input("Account Email", max_chars=254)
+            code = st.text_input("Recovery Code", type="password")
+            new_password = st.text_input("New Password", type="password", max_chars=128)
+            confirmation = st.text_input("Confirm New Password", type="password", max_chars=128)
+            if st.form_submit_button("Reset Password"):
+                try:
+                    if new_password != confirmation:
+                        raise ValueError("The passwords do not match.")
+                    auth.reset_password(email, code, new_password)
+                except ValueError as exc:
+                    st.error(str(exc))
+                else:
+                    st.success("Password reset. Log in with your new password.")
     st.stop()
 
 
@@ -74,6 +94,12 @@ def account_sidebar(user):
         st.write(f"Signed in as **{user['full_name']}**")
         st.caption("Hospital Member" if user["role"] == "hospital" else "Patient")
         st.button("Log Out", on_click=logout, use_container_width=True)
+        with st.expander("Account Recovery", expanded=bool(st.session_state.get("recovery_code_once"))):
+            if st.button("Generate New Recovery Code", use_container_width=True):
+                st.session_state["recovery_code_once"] = auth.create_recovery_code(st.session_state["auth_token"])
+            if st.session_state.get("recovery_code_once"):
+                st.code(st.session_state["recovery_code_once"], language=None)
+                st.caption("Save this code privately. It works once to reset your password and is replaced when you generate another code.")
         st.divider()
 
 

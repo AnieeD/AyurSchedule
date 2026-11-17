@@ -57,6 +57,10 @@ def initialize_auth(db_path=database.DB_PATH):
                 email_hash TEXT PRIMARY KEY, failures INTEGER NOT NULL,
                 window_start REAL NOT NULL, locked_until REAL NOT NULL DEFAULT 0
             );
+            CREATE TABLE IF NOT EXISTS auth_recovery_codes (
+                user_id INTEGER PRIMARY KEY, token_hash TEXT NOT NULL,
+                created_at REAL NOT NULL
+            );
         """)
         conn.execute("BEGIN IMMEDIATE")
         if conn.execute("SELECT 1 FROM users WHERE role = 'hospital' LIMIT 1").fetchone():
@@ -186,6 +190,37 @@ def logout(token, db_path=database.DB_PATH):
     if token:
         with closing(database.get_connection(db_path)) as conn, conn:
             conn.execute("DELETE FROM auth_sessions WHERE token_hash = ?", (_digest(token),))
+
+
+def create_recovery_code(token, db_path=database.DB_PATH):
+    """Replace the signed-in user's recovery code and reveal it once."""
+    user = require_user(token, db_path=db_path)
+    code = secrets.token_urlsafe(32)
+    with closing(database.get_connection(db_path)) as conn, conn:
+        conn.execute("BEGIN IMMEDIATE")
+        conn.execute("INSERT OR REPLACE INTO auth_recovery_codes (user_id, token_hash, created_at) VALUES (?, ?, ?)",
+                     (user["id"], _digest(code), time.time()))
+    return code
+
+
+def reset_password(email, recovery_code, new_password, db_path=database.DB_PATH):
+    """Consume a recovery code, change the password, and revoke old sessions."""
+    email = _email(email)
+    if not 12 <= len(new_password) <= 128:
+        raise ValueError("Use a password with 12 to 128 characters.")
+    if not recovery_code or not isinstance(recovery_code, str):
+        raise ValueError("Invalid recovery code or email.")
+    password_hash = PASSWORDS.hash(new_password)
+    with closing(database.get_connection(db_path)) as conn, conn:
+        conn.execute("BEGIN IMMEDIATE")
+        user = conn.execute("SELECT id FROM users WHERE email = ? AND active = 1", (email,)).fetchone()
+        stored = conn.execute("SELECT token_hash FROM auth_recovery_codes WHERE user_id = ?", (user["id"],)).fetchone() if user else None
+        if stored is None or not secrets.compare_digest(stored["token_hash"], _digest(recovery_code.strip())):
+            raise ValueError("Invalid recovery code or email.")
+        conn.execute("UPDATE users SET password_hash = ? WHERE id = ?", (password_hash, user["id"]))
+        conn.execute("DELETE FROM auth_recovery_codes WHERE user_id = ?", (user["id"],))
+        conn.execute("DELETE FROM auth_sessions WHERE user_id = ?", (user["id"],))
+        conn.execute("DELETE FROM auth_login_attempts WHERE email_hash = ?", (_digest(email),))
 
 
 def create_invite(token, email, role="hospital", patient_id=None, db_path=database.DB_PATH):
