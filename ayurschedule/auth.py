@@ -34,7 +34,7 @@ def _email(value):
     return value
 
 
-def initialize_auth(db_path=database.DB_PATH):
+def initialize_auth(db_path=database.DB_PATH, setup_code=None):
     with closing(database.get_connection(db_path)) as conn, conn:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS users (
@@ -64,6 +64,17 @@ def initialize_auth(db_path=database.DB_PATH):
         """)
         conn.execute("BEGIN IMMEDIATE")
         if conn.execute("SELECT 1 FROM users WHERE role = 'hospital' LIMIT 1").fetchone():
+            return None
+        if setup_code:
+            if not isinstance(setup_code, str) or len(setup_code) < 32:
+                raise ValueError("Hospital setup code must have at least 32 characters.")
+            token_hash = _digest(setup_code)
+            current = conn.execute("SELECT token_hash FROM auth_invites WHERE bootstrap = 1 AND used_by IS NULL").fetchone()
+            if current and current["token_hash"] == token_hash:
+                return None
+            conn.execute("DELETE FROM auth_invites WHERE bootstrap = 1 AND used_by IS NULL")
+            conn.execute("INSERT INTO auth_invites (token_hash, role, expires_at, bootstrap) VALUES (?, 'hospital', ?, 1)",
+                         (token_hash, 253402300799.0))
             return None
         # The setup secret stays on the server, never on the public signup page.
         actual_db = Path(conn.execute("PRAGMA database_list").fetchone()["file"])
