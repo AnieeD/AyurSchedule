@@ -1,0 +1,12 @@
+__pycache__/
+.pytest_cache/
+.streamlit/hospital_setup_invite.txt
+*.db
+*.db-*
+/optimized_schedule.csv
+/benchmark_comparison.csv
+/convergence_benchmark.png
+.env
+.env.*
+!.env.example
+.streamlit/secrets.toml
