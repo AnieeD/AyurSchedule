@@ -44,6 +44,25 @@ def test_password_hashes_sessions_and_logout(accounts):
         ClinicAccess(token, db_path).call("fetch_clinic_state")
 
 
+def test_recovery_code_resets_password_once_and_revokes_sessions(accounts):
+    db_path, _, session, _ = accounts
+    first = auth.create_recovery_code(session, db_path)
+    code = auth.create_recovery_code(session, db_path)
+    with pytest.raises(ValueError, match="Invalid recovery"):
+        auth.reset_password("staff@example.com", first, "A different strong password!", db_path)
+    with pytest.raises(ValueError, match="Invalid recovery"):
+        auth.reset_password("another@example.com", code, "A different strong password!", db_path)
+    with pytest.raises(ValueError, match="12 to 128"):
+        auth.reset_password("staff@example.com", code, "short", db_path)
+    auth.reset_password("staff@example.com", code, "A different strong password!", db_path)
+    assert auth.session_user(session, db_path) is None
+    with pytest.raises(ValueError, match="Invalid email or password"):
+        auth.login("staff@example.com", PASSWORD, db_path)
+    assert auth.session_user(auth.login("staff@example.com", "A different strong password!", db_path), db_path)["role"] == "hospital"
+    with pytest.raises(ValueError, match="Invalid recovery"):
+        auth.reset_password("staff@example.com", code, PASSWORD, db_path)
+
+
 def test_member_invites_are_required_email_bound_single_use_and_role_bound(accounts):
     db_path, _, staff, used_setup = accounts
     for code in ("", "wrong", used_setup):

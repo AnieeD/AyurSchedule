@@ -323,7 +323,7 @@ def test_login_and_logout_hide_all_clinic_information(clinic_app):
     control(app, "button", "Log Out").click()
     run(app)
     assert auth.session_user(previous_token) is None
-    assert [tab.label for tab in app.tabs] == ["Login", "Sign Up"]
+    assert [tab.label for tab in app.tabs] == ["Login", "Sign Up", "Forgot Password"]
     assert not app.dataframe
     assert not app.file_uploader
     assert not any("Generate Optimized" in button.label for button in app.button)
@@ -337,6 +337,33 @@ def test_login_and_logout_hide_all_clinic_information(clinic_app):
     control(app, "button", "Log In").click()
     run(app)
     assert len(app.tabs) == 6
+    assert auth.session_user(app.session_state["auth_token"])["role"] == "hospital"
+
+
+def test_forgot_password_screen_redeems_saved_recovery_code(clinic_app):
+    app = clinic_app
+    run(app)
+    control(app, "button", "Generate New Recovery Code").click()
+    run(app)
+    code = app.session_state["recovery_code_once"]
+    control(app, "button", "Log Out").click()
+    run(app)
+    app.session_state["auth_page"] = "Forgot Password"
+    run(app)
+    for label, value in {
+        "Account Email": "member@example.com",
+        "Recovery Code": code,
+        "New Password": "A replacement hospital password!",
+        "Confirm New Password": "A replacement hospital password!",
+    }.items():
+        control(app, "text_input", label).input(value)
+    control(app, "button", "Reset Password").click()
+    run(app)
+    assert any("Password reset" in message.value for message in app.success)
+    control(app, "text_input", "Login Email").input("member@example.com")
+    control(app, "text_input", "Login Password").input("A replacement hospital password!")
+    control(app, "button", "Log In").click()
+    run(app)
     assert auth.session_user(app.session_state["auth_token"])["role"] == "hospital"
 
 
@@ -406,4 +433,4 @@ def test_revoked_import_callback_cannot_replace_data(clinic_app, hospital_workbo
     control(app, "button", "Import Workbook and Replace Clinic Data").click()
     run(app)
     assert database.fetch_clinic_state() == before
-    assert [tab.label for tab in app.tabs] == ["Login", "Sign Up"]
+    assert [tab.label for tab in app.tabs] == ["Login", "Sign Up", "Forgot Password"]
