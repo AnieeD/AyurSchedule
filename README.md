@@ -1,24 +1,25 @@
-# 🌿 AyurSchedule — Genetic Algorithm–Based Panchakarma Therapy Scheduling
+# AyurSchedule
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Streamlit App](https://img.shields.io/badge/Streamlit-Clinic%20Dashboard-FF4B4B.svg)](https://streamlit.io)
-[![Optimization](https://img.shields.io/badge/CSE%20578-Memetic%20GA%20%2B%20SA-2e7d32.svg)](#)
 
-**AyurSchedule** is a production-ready clinical resource scheduling system and evolutionary optimization engine designed for **Ayurvedic Panchakarma clinics and hospitals**. Developed for **CSE 578: Optimization Techniques for Intelligent Systems**, it solves the coupled **Multi-Mode Resource-Constrained Project Scheduling Problem (MRCPSP)** and **Therapist Rostering Problem** using a **Domain-Guided Hybrid Memetic Genetic Algorithm (GA + Local Search)**.
+**AyurSchedule** is a Streamlit application for planning Ayurvedic Panchakarma appointments across patients, therapists, rooms, and equipment. Its genetic algorithm and optional local search compare candidate schedules against clinic constraints and show the best result found in the allotted search. The app includes role-based accounts, an interactive Gantt chart, clinic registry management, and Excel import/export.
+
+> **Data storage:** The default SQLite database lives on the server. On Streamlit Community Cloud, local files may be lost when the app is replaced or restarted. Use a persistent database and a proper backup plan before relying on this app for real patient records. Do not put patient data or invite codes in Git.
 
 ---
 
-## ✨ Key Real-World Clinical Capabilities
+## Features
 
 1. **Sequential Therapy Chaining (*Purvakarma* $\rightarrow$ *Pradhanakarma*):** Automatically schedules dependent multi-stage treatments back-to-back without idle patient waiting (e.g., *Abhyanga* herbal oil massage immediately followed by *Bashpa Swedana* herbal steam bath).
 2. **Room Sanitization & Turnover Buffers:** Enforces mandatory 30-minute cleanup/preparation buffers (`prep_slots`) on specialized treatment rooms (*Dhara Suites*, *Steam Chambers*, *Basti Units*) after every session.
 3. **Chronobiological *Dosha* Optimization:** Aligns therapies with Ayurvedic circadian rhythms (*Kapha* in morning slots `08:00–10:30`, *Pitta* in midday slots `10:30–14:00`, and *Vata* in afternoon slots `14:00–18:00`).
-4. **Hard Clinical Constraints:** Guarantees zero therapist double-booking, zero room collisions, therapist skill certification checks, patient–therapist gender matching, shift boundaries, and mandatory clinic lunch/sanitization breaks.
+4. **Clinical constraints:** Checks therapist and room collisions, therapy qualifications, optional patient–therapist gender matching, shifts, and clinic breaks. Review the reported hard violations before using a schedule.
 5. **SQLite Persistence & Streamlit Web Portal:** Add doctors/therapists with their qualified therapies, shifts, and workload limits; remove departing practitioners from the active roster; and add or remove daily patient bookings, including chained follow-ups. Schedules refresh after registry changes. Interactive Plotly Gantt charts keep patient names inside their bars, hide labels that do not fit, and retain full details on hover. Export schedules as CSV.
 
 ---
 
-## 📂 Repository Architecture
+## Repository layout
 
 ```text
 AyurSchedule/
@@ -31,7 +32,8 @@ AyurSchedule/
 │   ├── auth_ui.py           # Login, signup & patient portal
 │   ├── database.py          # SQLite schema, seed data & resource management
 │   ├── excel_io.py          # Excel templates, validation, backup & import
-│   └── optimizer.py         # Scheduling algorithms & constraint evaluation
+│   ├── optimizer.py         # Scheduling algorithms & constraint evaluation
+│   └── ui_theme.py          # Shared visual theme
 ├── templates/
 │   └── AyurSchedule_Hospital_Template.xlsx
 ├── tests/                   # Authentication, UI, database, Excel & optimizer tests
@@ -45,20 +47,22 @@ The clinic database and first-member setup invite are local runtime files exclud
 
 ---
 
-## 🚀 Quickstart Guide
+## Run locally
 
-### 1. Clone & Install Dependencies
+### Install dependencies
+
 ```bash
-git clone https://github.com/anieed/AyurSchedule.git
+git clone https://github.com/AnieeD/AyurSchedule.git
 cd AyurSchedule
 pip install -r requirements.txt
 ```
 
-### 2. Launch the Clinic Web Dashboard (Streamlit)
+### Start the app
+
 ```bash
 streamlit run app.py
 ```
-Open `http://localhost:8501` in your browser to manage bookings, view the interactive Room/Therapist Gantt chart, adjust GA hyperparameters, and export daily schedules.
+Open `http://localhost:8501` in your browser. A fresh local database starts with sample clinic data; replace it through **Excel Import / Export** when you are ready to use your own records.
 
 Schedule generation defaults to **Automatic** parameter selection. It compares several population sizes, generation limits, crossover and mutation probabilities, and random seeds, then uses the lowest-penalty feasible schedule found within a bounded search. The selected settings and trial scores appear with the schedule. Choose **Manual** in the sidebar to edit the sliders, memetic search setting, and seed yourself. Automatic search may take longer than one manual run and does not guarantee a global optimum.
 
@@ -72,9 +76,15 @@ The app opens with **Login / Sign Up**. Clinic data is unavailable until login.
 | Patient | Their own appointments, assigned treatment times, doctor and room; private hospital invite redemption to link existing records. |
 | Logged out | Login and signup only. |
 
-The first hospital member must use the private setup invite generated when the server first starts. Open `.streamlit/hospital_setup_invite.txt` beside the clinic database, copy its code, and select **Sign Up → Hospital Member**. This file is excluded from Git. There is no shared default password. After setup, use **Accounts & Invites** to issue email-bound, single-use member invites, valid for 72 hours. Public signup cannot grant hospital access without an invite.
+For a new local installation without a configured fixed code, the server writes a private first-member invite to `.streamlit/hospital_setup_invite.txt`. Open that file and select **Sign Up → Hospital Member**. The file is excluded from Git. After setup, use **Accounts & Invites** to issue email-bound, single-use member invites, valid for 72 hours. There is no public default invite code or password.
 
-For a deployed app, set a random 32-character-or-longer `AYUR_HOSPITAL_INVITE_CODE` in the deployment's Streamlit **Secrets** before creating the first hospital account, for example `AYUR_HOSPITAL_INVITE_CODE = "<private-random-code>"`. Anyone who has that exact code can select **Sign Up → Hospital Member**, including the first member and later members. It stays valid until you change or remove the secret, so share it only with authorized staff and keep it out of Git. The app stores only its hash. A previously configured `AYUR_HOSPITAL_SETUP_CODE` also works as the fixed code for compatibility. Individual email-bound invites from **Accounts & Invites** continue to work. Invite codes and accounts in a local SQLite database do not carry over to a separately deployed database. The default SQLite database is local to the server, so production deployments need persistent storage to keep accounts and clinic data across server replacement.
+For a deployed app, configure a random code of at least 32 characters in Streamlit **Secrets** before the first hospital signup:
+
+```toml
+AYUR_HOSPITAL_INVITE_CODE = "<private-random-code-at-least-32-characters>"
+```
+
+Anyone with this exact code can sign up as a hospital member. It remains valid until you change or remove the secret, so share it only with authorized staff and keep it out of Git. The app stores only its hash. The older `AYUR_HOSPITAL_SETUP_CODE` setting also works for compatibility. Individual email-bound invites from **Accounts & Invites** continue to work. Accounts and invites stored in one SQLite database do not automatically appear in another deployment.
 
 Patients can sign up without an invite and receive a new patient ID. To access an existing clinic record, a hospital member must create a **Patient Record Invite** for that patient ID and the patient's account email. The patient can redeem it at signup or through **Link My Existing Patient Record**. Entering another patient's ID or changing interface state cannot grant access to their records. Account lists and workbook backups never include password hashes or login tokens.
 
@@ -100,12 +110,24 @@ Use **Excel Import / Export** (or **Hospital Excel Upload** in the sidebar) to l
 
 Uploads accept `.xlsx` files up to 10 MB and 10,000 data rows per sheet. Use literal cell values rather than formulas. Clinic hours remain `08:00–18:00`, with `13:00–14:00` reserved for lunch/sanitization. Individual booking/resource checks do not guarantee that a heavily loaded day can fit; review the generated schedule's hard violations and penalty score.
 
-### 3. Run the CSE 578 Comparative Benchmark via CLI
+## Command-line scheduling and benchmark
+
+Run a daily schedule and write the result to a CSV file (today is the default date; pass `--date YYYY-MM-DD` for another day):
+
+```bash
+python cli.py --out optimized_schedule.csv
+```
+
+Compare the available scheduling algorithms:
+
 ```bash
 python cli.py --benchmark --pop 80 --gen 120
 ```
 
-### 4. Run Unit Tests
+The CLI reads the local SQLite clinic database and writes reports to the current directory. See `python cli.py --help` for all options.
+
+## Tests
+
 ```bash
-pytest
+python -m pytest -q
 ```

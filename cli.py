@@ -1,16 +1,16 @@
 import argparse
-import os
+from datetime import date
 import pandas as pd
 import matplotlib.pyplot as plt
 from ayurschedule.database import init_db, fetch_clinic_state
 from ayurschedule.optimizer import AyurSchedulerEngine
 
 def main():
-    parser = argparse.ArgumentParser(description="AyurSchedule — CLI & Benchmark Suite (CSE 578)")
-    parser.add_argument("--date", type=str, default="2026-11-18", help="Target clinic date (YYYY-MM-DD)")
+    parser = argparse.ArgumentParser(description="AyurSchedule - CLI & Benchmark Suite")
+    parser.add_argument("--date", type=str, default=date.today().isoformat(), help="Target clinic date (YYYY-MM-DD; default: today)")
     parser.add_argument("--pop", type=int, default=80, help="GA Population size")
     parser.add_argument("--gen", type=int, default=120, help="GA Generations")
-    parser.add_argument("--benchmark", action="store_true", help="Run full CSE 578 comparative benchmark")
+    parser.add_argument("--benchmark", action="store_true", help="Run the comparative benchmark")
     parser.add_argument("--out", type=str, default="optimized_schedule.csv", help="Output CSV path")
     args = parser.parse_args()
 
@@ -20,7 +20,7 @@ def main():
 
     if args.benchmark:
         print("=" * 75)
-        print(f"AYURSCHEDULE CSE 578 BENCHMARK SUITE | Date: {args.date} | Sessions: {len(state['bookings'])}")
+        print(f"AYURSCHEDULE BENCHMARK SUITE | Date: {args.date} | Sessions: {len(state['bookings'])}")
         print("=" * 75)
         r_greedy = engine.run_greedy_fcfs()
         r_sa = engine.run_simulated_annealing(seed=42)

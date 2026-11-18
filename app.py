@@ -29,11 +29,12 @@ apply_theme()
 
 # Initialize SQLite database on startup
 init_db()
-try:
-    hospital_member_code = st.secrets.get("AYUR_HOSPITAL_INVITE_CODE") or st.secrets.get("AYUR_HOSPITAL_SETUP_CODE")
-except StreamlitSecretNotFoundError:
-    hospital_member_code = None
-hospital_member_code = hospital_member_code or os.environ.get("AYUR_HOSPITAL_INVITE_CODE") or os.environ.get("AYUR_HOSPITAL_SETUP_CODE")
+hospital_member_code = os.environ.get("AYUR_HOSPITAL_INVITE_CODE") or os.environ.get("AYUR_HOSPITAL_SETUP_CODE")
+if not hospital_member_code:
+    try:
+        hospital_member_code = st.secrets.get("AYUR_HOSPITAL_INVITE_CODE") or st.secrets.get("AYUR_HOSPITAL_SETUP_CODE")
+    except StreamlitSecretNotFoundError:
+        hospital_member_code = None
 auth.initialize_auth(member_code=hospital_member_code)
 current_user = auth_ui.require_login()
 if current_user["role"] == "patient":
