@@ -93,6 +93,27 @@ def test_deployed_first_member_uses_private_setup_secret(tmp_path):
         auth.register_user("Second Member", "second@example.com", PASSWORD, "hospital", invite_code=setup_code, db_path=db_path)
 
 
+def test_fixed_hospital_code_works_for_first_and_later_members(tmp_path):
+    db_path = str(tmp_path / "fixed_code.db")
+    fixed_code = "A-private-fixed-hospital-code-123456789"
+    replacement = "A-different-private-hospital-code-987654321"
+    database.init_db(db_path)
+    auth.initialize_auth(db_path, member_code=fixed_code)
+    assert not (tmp_path / ".streamlit" / "hospital_setup_invite.txt").exists()
+    auth.register_user("First Member", "first@example.com", PASSWORD, "hospital", invite_code=fixed_code, db_path=db_path)
+    auth.initialize_auth(db_path, member_code=fixed_code)
+    auth.register_user("Second Member", "second@example.com", PASSWORD, "hospital", invite_code=fixed_code, db_path=db_path)
+    with pytest.raises(ValueError, match="invite code"):
+        auth.register_user("Patient", "patient@example.com", PASSWORD, "patient", gender="F", invite_code=fixed_code, db_path=db_path)
+    auth.initialize_auth(db_path, member_code=replacement)
+    with pytest.raises(ValueError, match="invite code"):
+        auth.register_user("Old Code", "old@example.com", PASSWORD, "hospital", invite_code=fixed_code, db_path=db_path)
+    auth.register_user("Third Member", "third@example.com", PASSWORD, "hospital", invite_code=replacement, db_path=db_path)
+    auth.initialize_auth(db_path)
+    with pytest.raises(ValueError, match="invite code"):
+        auth.register_user("Disabled Code", "disabled@example.com", PASSWORD, "hospital", invite_code=replacement, db_path=db_path)
+
+
 def test_patient_can_self_register_but_cannot_claim_an_existing_id(accounts):
     db_path, _, _, _ = accounts
     auth.register_user("New Patient", "new.patient@example.com", PASSWORD, "patient", gender="F", db_path=db_path)

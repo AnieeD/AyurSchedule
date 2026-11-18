@@ -388,6 +388,27 @@ def test_member_signup_uses_hospital_invite(clinic_app):
     assert any(button.label == "Add Room / Chamber" for button in app.button)
 
 
+def test_fixed_hospital_code_signup_in_app(clinic_app, monkeypatch):
+    fixed_code = "A-private-fixed-hospital-code-123456789"
+    monkeypatch.setenv("AYUR_HOSPITAL_INVITE_CODE", fixed_code)
+    app = clinic_app
+    run(app)
+    control(app, "button", "Log Out").click()
+    run(app)
+    app.session_state["auth_page"] = "Sign Up"
+    control(app, "radio", "Account Type").set_value("Hospital Member")
+    run(app)
+    for label, value in {
+        "Full Name": "Fixed Code Member", "Signup Email": "fixed@example.com",
+        "Signup Password": "A strong fixed-code password!", "Confirm Password": "A strong fixed-code password!",
+        "Hospital Invite Code": fixed_code,
+    }.items():
+        control(app, "text_input", label).input(value)
+    control(app, "button", "Create Account").click()
+    run(app)
+    assert auth.session_user(app.session_state["auth_token"])["role"] == "hospital"
+
+
 def test_patient_signup_sees_only_own_appointments_despite_role_tampering(clinic_app):
     app = clinic_app
     invite = auth.create_invite(app.session_state["auth_token"], "patient@example.com", "patient", "PT-102")

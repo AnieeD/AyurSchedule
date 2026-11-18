@@ -1,5 +1,6 @@
 import streamlit as st
 from streamlit.errors import StreamlitSecretNotFoundError
+import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -27,10 +28,11 @@ st.set_page_config(
 # Initialize SQLite database on startup
 init_db()
 try:
-    hospital_setup_code = st.secrets.get("AYUR_HOSPITAL_SETUP_CODE")
+    hospital_member_code = st.secrets.get("AYUR_HOSPITAL_INVITE_CODE") or st.secrets.get("AYUR_HOSPITAL_SETUP_CODE")
 except StreamlitSecretNotFoundError:
-    hospital_setup_code = None
-auth.initialize_auth(setup_code=hospital_setup_code)
+    hospital_member_code = None
+hospital_member_code = hospital_member_code or os.environ.get("AYUR_HOSPITAL_INVITE_CODE") or os.environ.get("AYUR_HOSPITAL_SETUP_CODE")
+auth.initialize_auth(member_code=hospital_member_code)
 current_user = auth_ui.require_login()
 if current_user["role"] == "patient":
     auth_ui.patient_portal(current_user)

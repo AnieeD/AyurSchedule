@@ -1,4 +1,4 @@
-"""Local accounts, opaque server sessions, and single-use membership invitations."""
+"""Local accounts, opaque server sessions, and hospital membership codes."""
 
 from contextlib import closing
 import hashlib
@@ -34,7 +34,7 @@ def _email(value):
     return value
 
 
-def initialize_auth(db_path=database.DB_PATH, setup_code=None):
+def initialize_auth(db_path=database.DB_PATH, setup_code=None, member_code=None):
     with closing(database.get_connection(db_path)) as conn, conn:
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS users (
@@ -61,9 +61,23 @@ def initialize_auth(db_path=database.DB_PATH, setup_code=None):
                 user_id INTEGER PRIMARY KEY, token_hash TEXT NOT NULL,
                 created_at REAL NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS auth_settings (
+                key TEXT PRIMARY KEY, value TEXT NOT NULL
+            );
         """)
         conn.execute("BEGIN IMMEDIATE")
+        if member_code:
+            if not isinstance(member_code, str) or len(member_code) < 32:
+                raise ValueError("Fixed hospital member code must have at least 32 characters.")
+            fixed_hash = _digest(member_code)
+            current = conn.execute("SELECT value FROM auth_settings WHERE key = 'hospital_member_code'").fetchone()
+            if current is None or current["value"] != fixed_hash:
+                conn.execute("INSERT OR REPLACE INTO auth_settings (key, value) VALUES ('hospital_member_code', ?)", (fixed_hash,))
+        else:
+            conn.execute("DELETE FROM auth_settings WHERE key = 'hospital_member_code'")
         if conn.execute("SELECT 1 FROM users WHERE role = 'hospital' LIMIT 1").fetchone():
+            return None
+        if member_code:
             return None
         if setup_code:
             if not isinstance(setup_code, str) or len(setup_code) < 32:
@@ -147,7 +161,9 @@ def register_user(full_name, email, password, role, gender=None, invite_code="",
         conn.execute("BEGIN IMMEDIATE")
         if conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
             raise ValueError("An account with this email already exists. Please log in.")
-        invitation = _invitation(conn, invite_code, role, email) if invite_code.strip() else None
+        fixed_code = conn.execute("SELECT value FROM auth_settings WHERE key = 'hospital_member_code'").fetchone() if role == "hospital" else None
+        using_fixed_code = bool(fixed_code and secrets.compare_digest(fixed_code["value"], _digest(invite_code.strip())))
+        invitation = _invitation(conn, invite_code, role, email) if invite_code.strip() and not using_fixed_code else None
         if invitation and invitation["bootstrap"] and conn.execute("SELECT 1 FROM users WHERE role = 'hospital'").fetchone():
             raise ValueError("Setup is complete. Request a new invite from a hospital member.")
         patient_id, linked_name = None, None

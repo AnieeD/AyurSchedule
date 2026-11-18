@@ -49,7 +49,7 @@ def require_login():
         st.subheader("Create an account")
         account_type = st.radio("Account Type", ["Patient", "Hospital Member"], horizontal=True)
         if account_type == "Hospital Member":
-            st.caption("A hospital invite code is required. Ask an existing hospital member or the person setting up this installation.")
+            st.caption("Enter the clinic's fixed hospital code or an individual invite from an existing hospital member.")
         else:
             st.caption("Patients can view only their own appointments. A hospital patient invite links an existing medical record.")
         with st.form("signup_form", clear_on_submit=True):
@@ -139,6 +139,7 @@ def hospital_accounts(access):
     accounts = auth.list_accounts(token)
     st.dataframe(pd.DataFrame(accounts), use_container_width=True, hide_index=True)
     st.subheader("Invite a Hospital Member")
+    st.caption("Individual invites remain available for a specific email, even when the clinic also uses a fixed hospital code.")
     with st.form("invite_member_form", clear_on_submit=True):
         email = st.text_input("New Member Email")
         if st.form_submit_button("Create Hospital Member Invite"):
