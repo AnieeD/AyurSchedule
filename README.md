@@ -5,6 +5,8 @@
 
 **AyurSchedule** is a Streamlit application for planning Ayurvedic Panchakarma appointments across patients, therapists, rooms, and equipment. Its genetic algorithm and optional local search compare candidate schedules against clinic constraints and show the best result found in the allotted search. The app includes role-based accounts, an interactive Gantt chart, clinic registry management, and Excel import/export.
 
+**Live app:** [ayurschedule.streamlit.app](https://ayurschedule.streamlit.app/)
+
 > **Data storage:** The default SQLite database lives on the server. On Streamlit Community Cloud, local files may be lost when the app is replaced or restarted. Use a persistent database and a proper backup plan before relying on this app for real patient records. Do not put patient data or invite codes in Git.
 
 ---

@@ -23,6 +23,25 @@ def apply_theme():
     }
     [data-testid="stSidebar"] .block-container { padding-top: 1.3rem; }
     [data-testid="stSidebar"] hr { border-color: rgba(210, 226, 209, .14); }
+    .st-key-sidebar_clinic_card, .st-key-sidebar_ga_card {
+        background: linear-gradient(155deg, rgba(25, 66, 51, .88), rgba(12, 34, 36, .94));
+        border: 1px solid rgba(218, 185, 112, .24) !important;
+        border-radius: 17px !important;
+        padding: 1rem .9rem .85rem !important;
+        margin-bottom: 1rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, .13);
+    }
+    .st-key-sidebar_clinic_card h3, .st-key-sidebar_ga_card h3 {
+        font-size: 1.06rem; line-height: 1.3; margin: 0 0 .45rem;
+    }
+    .st-key-sidebar_ga_card [data-testid="stSlider"] {
+        background: rgba(8, 23, 27, .42);
+        border: 1px solid rgba(174, 204, 178, .12);
+        border-radius: 12px;
+        padding: .8rem .75rem .6rem;
+        margin: .15rem 0 .45rem;
+    }
+    .st-key-sidebar_ga_card [data-testid="stSlider"] label { font-weight: 630; }
     .ayur-brand {
         display: flex; align-items: center; gap: .55rem;
         color: #f7f5e9; font-size: 1.25rem; font-weight: 760;
@@ -53,20 +72,45 @@ def apply_theme():
         box-shadow: 0 12px 30px rgba(0, 0, 0, .10);
     }
     div[data-testid="stForm"] { padding: 1.1rem 1.15rem; }
+    .st-key-auth_page_shell { width: 100%; max-width: 860px; margin: 0 auto; }
+    .st-key-auth_page_shell > div { gap: .85rem; }
+    .st-key-auth_page_shell [data-testid="stTabs"] { margin-top: .55rem; }
+    :is(.st-key-auth_login_panel, .st-key-auth_signup_panel, .st-key-auth_recovery_panel) {
+        background: linear-gradient(145deg, rgba(24, 62, 48, .92), rgba(13, 34, 39, .96));
+        border: 1px solid rgba(219, 183, 109, .23) !important;
+        border-radius: 18px !important;
+        padding: 1.5rem 1.65rem !important;
+        box-shadow: 0 16px 38px rgba(0, 0, 0, .16);
+    }
+    :is(.st-key-auth_login_panel, .st-key-auth_signup_panel, .st-key-auth_recovery_panel) [data-testid="stForm"] {
+        background: transparent; border: 0; border-radius: 0;
+        box-shadow: none; padding: .5rem 0 0; margin: .4rem 0 0;
+    }
+    :is(.st-key-auth_login_panel, .st-key-auth_signup_panel, .st-key-auth_recovery_panel) [data-testid="stTextInput"] {
+        margin-bottom: .25rem;
+    }
     div[data-testid="stDataFrame"], div[data-testid="stPlotlyChart"] {
         overflow: hidden; border: 1px solid rgba(156, 191, 162, .13); border-radius: 15px;
         background: rgba(17, 39, 36, .48);
     }
     div[data-testid="stTabs"] [role="tablist"] {
-        gap: .35rem; border-bottom: 1px solid rgba(190, 213, 190, .14); padding-bottom: .45rem;
+        gap: .6rem !important; border-bottom: 1px solid rgba(190, 213, 190, .14);
+        padding: .35rem 0 .85rem;
     }
     div[data-testid="stTabs"] button[role="tab"] {
-        border-radius: 10px; padding: .55rem .8rem; color: #afc6ba; font-weight: 620;
+        flex: 0 0 auto; white-space: nowrap;
+        background: rgba(18, 47, 41, .62) !important;
+        border: 1px solid rgba(176, 203, 178, .2) !important;
+        border-radius: 11px; padding: .65rem 1rem;
+        margin-right: .15rem;
+        color: #c3d5c9; font-weight: 620;
     }
     div[data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        background: rgba(211, 171, 86, .15); color: #f0ca79;
+        background: rgba(211, 171, 86, .2) !important;
+        border-color: rgba(222, 185, 108, .63) !important;
+        color: #f4cf83;
     }
-    div[data-testid="stTabs"] [data-baseweb="tab-highlight"] { background-color: #d7ae5b; }
+    div[data-testid="stTabs"] [data-baseweb="tab-highlight"] { display: none; }
     div.stButton > button, div.stDownloadButton > button, div.stFormSubmitButton > button {
         border-radius: 10px; border-color: rgba(217, 180, 95, .35);
         font-weight: 650; transition: transform .15s ease, border-color .15s ease, background .15s ease;
@@ -85,6 +129,9 @@ def apply_theme():
         .block-container { padding: 1.1rem .85rem 3rem; }
         .ayur-hero { padding: 1.25rem; border-radius: 15px; }
         .ayur-hero h1 { font-size: 1.8rem; }
+        :is(.st-key-auth_login_panel, .st-key-auth_signup_panel, .st-key-auth_recovery_panel) {
+            padding: 1.1rem !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)

@@ -30,14 +30,16 @@ def require_login():
     if token:
         st.session_state.clear()
         st.session_state["login_notice"] = "Your session expired. Please log in again."
-    st.title("🌿 Welcome to AyurSchedule")
-    st.caption("Hospital scheduling and your personal therapy appointments")
+    auth_shell = st.container(key="auth_page_shell")
+    auth_shell.title("🌿 Welcome to AyurSchedule")
+    auth_shell.caption("Hospital scheduling and your personal therapy appointments")
     if "login_notice" in st.session_state:
-        st.info(st.session_state.pop("login_notice"))
-    login_tab, signup_tab, recovery_tab = st.tabs(["Login", "Sign Up", "Forgot Password"], key="auth_page", on_change="rerun")
+        auth_shell.info(st.session_state.pop("login_notice"))
+    login_tab, signup_tab, recovery_tab = auth_shell.tabs(["Login", "Sign Up", "Forgot Password"], key="auth_page", on_change="rerun")
     with login_tab:
-        st.subheader("Log in to your account")
-        with st.form("login_form", clear_on_submit=True):
+        login_panel = st.container(border=True, key="auth_login_panel")
+        login_panel.subheader("Log in to your account")
+        with login_panel.form("login_form", clear_on_submit=True):
             email = st.text_input("Login Email", max_chars=254)
             password = st.text_input("Login Password", type="password", max_chars=128)
             if st.form_submit_button("Log In", type="primary"):
@@ -46,13 +48,14 @@ def require_login():
                 except ValueError as exc:
                     st.error(str(exc))
     with signup_tab:
-        st.subheader("Create an account")
-        account_type = st.radio("Account Type", ["Patient", "Hospital Member"], horizontal=True)
+        signup_panel = st.container(border=True, key="auth_signup_panel")
+        signup_panel.subheader("Create an account")
+        account_type = signup_panel.radio("Account Type", ["Patient", "Hospital Member"], horizontal=True)
         if account_type == "Hospital Member":
-            st.caption("Enter the clinic's fixed hospital code or an individual invite from an existing hospital member.")
+            signup_panel.caption("Enter the clinic's fixed hospital code or an individual invite from an existing hospital member.")
         else:
-            st.caption("Patients can view only their own appointments. A hospital patient invite links an existing medical record.")
-        with st.form("signup_form", clear_on_submit=True):
+            signup_panel.caption("Patients can view only their own appointments. A hospital patient invite links an existing medical record.")
+        with signup_panel.form("signup_form", clear_on_submit=True):
             name = st.text_input("Full Name", max_chars=150)
             signup_email = st.text_input("Signup Email", max_chars=254)
             signup_password = st.text_input("Signup Password", type="password", max_chars=128, help="Use 12 or more characters.")
@@ -70,9 +73,10 @@ def require_login():
                 except ValueError as exc:
                     st.error(str(exc))
     with recovery_tab:
-        st.subheader("Reset your password")
-        st.caption("Enter the recovery code saved when your account was created or from Account Recovery while signed in.")
-        with st.form("password_recovery_form", clear_on_submit=True):
+        recovery_panel = st.container(border=True, key="auth_recovery_panel")
+        recovery_panel.subheader("Reset your password")
+        recovery_panel.caption("Enter the recovery code saved when your account was created or from Account Recovery while signed in.")
+        with recovery_panel.form("password_recovery_form", clear_on_submit=True):
             email = st.text_input("Account Email", max_chars=254)
             code = st.text_input("Recovery Code", type="password")
             new_password = st.text_input("New Password", type="password", max_chars=128)

@@ -115,38 +115,39 @@ def open_excel_import():
 
 
 with st.sidebar:
-    st.header("⚙️ Clinic & GA Configuration")
+    clinic_card = st.container(border=True, key="sidebar_clinic_card")
+    clinic_card.subheader("⚙️ Clinic Configuration")
     st.session_state.setdefault("schedule_date", "2026-11-18")
-    schedule_date = st.text_input("Schedule Date (YYYY-MM-DD)", key="schedule_date")
-    st.button("📥 Hospital Excel Upload", on_click=open_excel_import, use_container_width=True)
-    enforce_gender = st.checkbox("Enforce Patient–Therapist Gender Match", value=True)
-    st.divider()
-    st.subheader("Evolutionary Hyperparameters")
-    optimization_mode = st.radio("Parameter Selection", ["Automatic", "Manual"], horizontal=True, key="optimization_mode")
+    schedule_date = clinic_card.text_input("Schedule Date (YYYY-MM-DD)", key="schedule_date")
+    clinic_card.button("📥 Hospital Excel Upload", on_click=open_excel_import, use_container_width=True)
+    enforce_gender = clinic_card.checkbox("Enforce Patient–Therapist Gender Match", value=True)
+    ga_card = st.container(border=True, key="sidebar_ga_card")
+    ga_card.subheader("Evolutionary Hyperparameters")
+    optimization_mode = ga_card.radio("Parameter Selection", ["Automatic", "Manual"], horizontal=True, key="optimization_mode")
     if optimization_mode == "Automatic":
         selected = st.session_state.get("latest_result", {}).get("auto_tuning", {}).get("parameters", {
             "pop_size": 60, "generations": 80, "crossover_rate": 0.75, "mutation_rate": 0.10, "seed": 42
         })
         for key, value in selected.items():
             st.session_state[f"auto_{key}"] = value
-        pop_size = st.slider("Population Size (N)", 20, 200, key="auto_pop_size", step=10, disabled=True)
-        generations = st.slider("Max Generations (G)", 20, 300, key="auto_generations", step=10, disabled=True)
-        crossover_rate = st.slider("Crossover Probability (Pc)", 0.50, 0.99, key="auto_crossover_rate", step=0.05, disabled=True)
-        mutation_rate = st.slider("Mutation Probability (Pm)", 0.01, 0.50, key="auto_mutation_rate", step=0.02, disabled=True)
-        use_memetic = st.checkbox("Enable Memetic Local Search Hybridization", value=True, disabled=True)
-        random_seed = st.number_input("Random Seed (Reproducibility)", key="auto_seed", step=1, disabled=True)
-        st.caption("Settings are selected by comparing schedule results. Switch to Manual to edit them.")
+        pop_size = ga_card.slider("Population Size (N)", 20, 200, key="auto_pop_size", step=10, disabled=True)
+        generations = ga_card.slider("Max Generations (G)", 20, 300, key="auto_generations", step=10, disabled=True)
+        crossover_rate = ga_card.slider("Crossover Probability (Pc)", 0.50, 0.99, key="auto_crossover_rate", step=0.05, disabled=True)
+        mutation_rate = ga_card.slider("Mutation Probability (Pm)", 0.01, 0.50, key="auto_mutation_rate", step=0.02, disabled=True)
+        use_memetic = ga_card.checkbox("Enable Memetic Local Search Hybridization", value=True, disabled=True)
+        random_seed = ga_card.number_input("Random Seed (Reproducibility)", key="auto_seed", step=1, disabled=True)
+        ga_card.caption("Settings are selected by comparing schedule results. Switch to Manual to edit them.")
     else:
         chosen = st.session_state.get("latest_result", {}).get("auto_tuning", {}).get("parameters", {})
         for key, default in {"pop_size": 80, "generations": 120, "crossover_rate": 0.85,
                              "mutation_rate": 0.18, "seed": 42}.items():
             st.session_state.setdefault(f"manual_{key}", chosen.get(key, default))
-        pop_size = st.slider("Population Size (N)", 20, 200, step=10, key="manual_pop_size")
-        generations = st.slider("Max Generations (G)", 20, 300, step=10, key="manual_generations")
-        crossover_rate = st.slider("Crossover Probability (Pc)", 0.50, 0.99, step=0.05, key="manual_crossover_rate")
-        mutation_rate = st.slider("Mutation Probability (Pm)", 0.01, 0.50, step=0.02, key="manual_mutation_rate")
-        use_memetic = st.checkbox("Enable Memetic Local Search Hybridization", value=True, key="manual_memetic")
-        random_seed = st.number_input("Random Seed (Reproducibility)", step=1, key="manual_seed")
+        pop_size = ga_card.slider("Population Size (N)", 20, 200, step=10, key="manual_pop_size")
+        generations = ga_card.slider("Max Generations (G)", 20, 300, step=10, key="manual_generations")
+        crossover_rate = ga_card.slider("Crossover Probability (Pc)", 0.50, 0.99, step=0.05, key="manual_crossover_rate")
+        mutation_rate = ga_card.slider("Mutation Probability (Pm)", 0.01, 0.50, step=0.02, key="manual_mutation_rate")
+        use_memetic = ga_card.checkbox("Enable Memetic Local Search Hybridization", value=True, key="manual_memetic")
+        random_seed = ga_card.number_input("Random Seed (Reproducibility)", step=1, key="manual_seed")
 
 def resource_shortages(clinic_state):
     missing_equipment, missing_practitioners = set(), set()
