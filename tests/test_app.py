@@ -61,6 +61,12 @@ def navigation_position(app):
 def test_practitioner_forms_refresh_roster_and_schedule(clinic_app):
     app = clinic_app
     run(app)
+    chosen = app.session_state["latest_result"]["auto_tuning"]["parameters"]
+    assert control(app, "slider", "Population Size (N)").value == chosen["pop_size"]
+    assert control(app, "slider", "Max Generations (G)").value == chosen["generations"]
+    assert control(app, "slider", "Crossover Probability (Pc)").value == chosen["crossover_rate"]
+    assert control(app, "slider", "Mutation Probability (Pm)").value == chosen["mutation_rate"]
+    assert control(app, "number_input", "Random Seed (Reproducibility)").value == chosen["seed"]
     navigation = navigation_position(app)
     select_tab(app, MANAGE_TAB)
     control(app, "text_input", "Doctor / Therapist Full Name").input("Dr. Test Practitioner")
@@ -73,6 +79,8 @@ def test_practitioner_forms_refresh_roster_and_schedule(clinic_app):
     assert "added" in app.success[0].value
     assert app.session_state["clinic_tabs"] == MANAGE_TAB
     assert app.get("tab_container")[0].proto.tab_container.default_tab_index == 3
+
+
     assert navigation_position(app) == navigation
     assert "latest_result" not in app.session_state
 
@@ -92,6 +100,18 @@ def test_practitioner_forms_refresh_roster_and_schedule(clinic_app):
     assert navigation_position(app) == navigation
     assert len(app.tabs) == 6
     assert sum(e.label == "🚀 Generate Optimized Clinic Schedule" for e in app.button) == 1
+
+
+def test_manual_schedule_settings_remain_editable(clinic_app):
+    app = clinic_app
+    app.session_state["optimization_mode"] = "Manual"
+    app.session_state["manual_pop_size"] = 20
+    app.session_state["manual_generations"] = 20
+    run(app)
+    assert control(app, "slider", "Population Size (N)").value == 20
+    assert control(app, "slider", "Max Generations (G)").value == 20
+    assert not control(app, "slider", "Population Size (N)").disabled
+    assert "auto_tuning" not in app.session_state["latest_result"]
 
 
 def test_patient_forms_remove_follow_up_and_refresh_schedule(clinic_app):

@@ -60,6 +60,8 @@ streamlit run app.py
 ```
 Open `http://localhost:8501` in your browser to manage bookings, view the interactive Room/Therapist Gantt chart, adjust GA hyperparameters, and export daily schedules.
 
+Schedule generation defaults to **Automatic** parameter selection. It compares several population sizes, generation limits, crossover and mutation probabilities, and random seeds, then uses the lowest-penalty feasible schedule found within a bounded search. The selected settings and trial scores appear with the schedule. Choose **Manual** in the sidebar to edit the sliders, memetic search setting, and seed yourself. Automatic search may take longer than one manual run and does not guarantee a global optimum.
+
 ### Accounts and role permissions
 
 The app opens with **Login / Sign Up**. Clinic data is unavailable until login.

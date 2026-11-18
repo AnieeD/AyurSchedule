@@ -114,12 +114,31 @@ with st.sidebar:
     enforce_gender = st.checkbox("Enforce Patient–Therapist Gender Match", value=True)
     st.divider()
     st.subheader("Evolutionary Hyperparameters")
-    pop_size = st.slider("Population Size (N)", min_value=20, max_value=200, value=80, step=10)
-    generations = st.slider("Max Generations (G)", min_value=20, max_value=300, value=120, step=10)
-    crossover_rate = st.slider("Crossover Probability (Pc)", 0.50, 0.99, 0.85, 0.05)
-    mutation_rate = st.slider("Mutation Probability (Pm)", 0.01, 0.50, 0.18, 0.02)
-    use_memetic = st.checkbox("Enable Memetic Local Search Hybridization", value=True)
-    random_seed = st.number_input("Random Seed (Reproducibility)", value=42, step=1)
+    optimization_mode = st.radio("Parameter Selection", ["Automatic", "Manual"], horizontal=True, key="optimization_mode")
+    if optimization_mode == "Automatic":
+        selected = st.session_state.get("latest_result", {}).get("auto_tuning", {}).get("parameters", {
+            "pop_size": 60, "generations": 80, "crossover_rate": 0.75, "mutation_rate": 0.10, "seed": 42
+        })
+        for key, value in selected.items():
+            st.session_state[f"auto_{key}"] = value
+        pop_size = st.slider("Population Size (N)", 20, 200, key="auto_pop_size", step=10, disabled=True)
+        generations = st.slider("Max Generations (G)", 20, 300, key="auto_generations", step=10, disabled=True)
+        crossover_rate = st.slider("Crossover Probability (Pc)", 0.50, 0.99, key="auto_crossover_rate", step=0.05, disabled=True)
+        mutation_rate = st.slider("Mutation Probability (Pm)", 0.01, 0.50, key="auto_mutation_rate", step=0.02, disabled=True)
+        use_memetic = st.checkbox("Enable Memetic Local Search Hybridization", value=True, disabled=True)
+        random_seed = st.number_input("Random Seed (Reproducibility)", key="auto_seed", step=1, disabled=True)
+        st.caption("Settings are selected by comparing schedule results. Switch to Manual to edit them.")
+    else:
+        chosen = st.session_state.get("latest_result", {}).get("auto_tuning", {}).get("parameters", {})
+        for key, default in {"pop_size": 80, "generations": 120, "crossover_rate": 0.85,
+                             "mutation_rate": 0.18, "seed": 42}.items():
+            st.session_state.setdefault(f"manual_{key}", chosen.get(key, default))
+        pop_size = st.slider("Population Size (N)", 20, 200, step=10, key="manual_pop_size")
+        generations = st.slider("Max Generations (G)", 20, 300, step=10, key="manual_generations")
+        crossover_rate = st.slider("Crossover Probability (Pc)", 0.50, 0.99, step=0.05, key="manual_crossover_rate")
+        mutation_rate = st.slider("Mutation Probability (Pm)", 0.01, 0.50, step=0.02, key="manual_mutation_rate")
+        use_memetic = st.checkbox("Enable Memetic Local Search Hybridization", value=True, key="manual_memetic")
+        random_seed = st.number_input("Random Seed (Reproducibility)", step=1, key="manual_seed")
 
 def resource_shortages(clinic_state):
     missing_equipment, missing_practitioners = set(), set()
@@ -141,8 +160,8 @@ missing_equipment, missing_practitioners = resource_shortages(state)
 schedule_ready = bool(state["bookings"] and state["therapists"] and state["rooms"]) and not (missing_equipment or missing_practitioners)
 # A roster, booking, date, or configuration change must invalidate the old schedule.
 schedule_context = (
-    state, enforce_gender, pop_size, generations, crossover_rate,
-    mutation_rate, use_memetic, int(random_seed)
+    state, enforce_gender, optimization_mode,
+    (pop_size, generations, crossover_rate, mutation_rate, use_memetic, int(random_seed)) if optimization_mode == "Manual" else None
 )
 if st.session_state.get("schedule_context") != schedule_context:
     st.session_state.pop("latest_result", None)
@@ -172,16 +191,21 @@ def render_schedule_content(run_opt, state, schedule_ready, missing_equipment, m
     elif run_opt or "latest_result" not in st.session_state:
         with st.spinner("Generating optimized clinic schedule..."):
             engine = AyurSchedulerEngine(state, enforce_gender_match=enforce_gender)
-            res = engine.run_memetic_ga(
-                pop_size=pop_size,
-                generations=generations,
-                crossover_rate=crossover_rate,
-                mutation_rate=mutation_rate,
-                use_memetic_ls=use_memetic,
-                seed=int(random_seed)
-            )
+            if optimization_mode == "Automatic":
+                res = engine.auto_tune_memetic_ga()
+            else:
+                res = engine.run_memetic_ga(
+                    pop_size=pop_size,
+                    generations=generations,
+                    crossover_rate=crossover_rate,
+                    mutation_rate=mutation_rate,
+                    use_memetic_ls=use_memetic,
+                    seed=int(random_seed)
+                )
             res["patient_schedule_saved"] = clinic.save_patient_schedule(res, state)
             st.session_state["latest_result"] = res
+            if optimization_mode == "Automatic":
+                st.rerun(scope="app")
 
     if schedule_ready and "latest_result" in st.session_state:
         res = st.session_state["latest_result"]
@@ -194,6 +218,16 @@ def render_schedule_content(run_opt, state, schedule_ready, missing_equipment, m
         m3.metric("Soft Violations (Dosha/Chain)", ev["soft_violations"])
         m4.metric("Workload StdDev (Slots)", f"{ev['workload_std']:.2f}")
         m5.metric("Execution Time", f"{res['runtime_ms']} ms")
+
+        if tuning := res.get("auto_tuning"):
+            chosen = tuning["parameters"]
+            st.caption(
+                f"Automatic search compared {len(tuning['trials'])} parameter sets and selected "
+                f"N={chosen['pop_size']}, G={chosen['generations']}, Pc={chosen['crossover_rate']:.2f}, "
+                f"Pm={chosen['mutation_rate']:.2f}, seed={chosen['seed']}."
+            )
+            with st.expander("View automatic search results"):
+                st.dataframe(pd.DataFrame(tuning["trials"]), use_container_width=True, hide_index=True)
 
         st.subheader("Interactive Room & Therapist Timeline (Gantt View)")
         # Build timeline coordinates for Plotly

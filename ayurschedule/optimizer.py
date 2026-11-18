@@ -352,6 +352,38 @@ class AyurSchedulerEngine:
             "schedule_df": self.chromosome_to_dataframe(best_chrom, final_eval)
         }
 
+    def auto_tune_memetic_ga(self, candidates=None, max_runtime_seconds: float = 45.0) -> Dict[str, Any]:
+        """Try several GA settings and return the best feasible schedule found."""
+        if candidates is None:
+            candidates = [
+                {"pop_size": 60, "generations": 80, "crossover_rate": 0.75, "mutation_rate": 0.10, "seed": 42},
+                {"pop_size": 80, "generations": 120, "crossover_rate": 0.85, "mutation_rate": 0.18, "seed": 73},
+                {"pop_size": 100, "generations": 150, "crossover_rate": 0.95, "mutation_rate": 0.30, "seed": 101},
+            ]
+        if not candidates:
+            raise ValueError("At least one parameter set is required.")
+
+        started = time.time()
+        trials = []
+        best_result, best_parameters = None, None
+        for parameters in candidates:
+            if trials and time.time() - started >= max_runtime_seconds:
+                break
+            result = self.run_memetic_ga(**parameters, use_memetic_ls=True)
+            evaluation = result["evaluation"]
+            trials.append({**parameters, "total_penalty": evaluation["total_penalty"],
+                           "hard_violations": evaluation["hard_violations"], "runtime_ms": result["runtime_ms"]})
+            rank = (evaluation["hard_violations"], evaluation["total_penalty"])
+            if best_result is None or rank < (best_result["evaluation"]["hard_violations"],
+                                               best_result["evaluation"]["total_penalty"]):
+                best_result, best_parameters = result, parameters.copy()
+            if evaluation["total_penalty"] == 0:
+                break
+
+        best_result["runtime_ms"] = round((time.time() - started) * 1000.0, 2)
+        best_result["auto_tuning"] = {"parameters": best_parameters, "trials": trials}
+        return best_result
+
     def run_simulated_annealing(self, iterations: int = 2500, initial_temp: float = 500.0, cooling_rate: float = 0.995, seed: int = 42) -> Dict[str, Any]:
         random.seed(seed)
         np.random.seed(seed)
