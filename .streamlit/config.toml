@@ -1,8 +1,16 @@
-[server] 
-address = "127.0.0.1" 
-headless = true 
+[server]
+address = "127.0.0.1"
+headless = true
 # Polling reliably detects changes to imported modules on Windows.
 fileWatcherType = "poll"
 runOnSave = true
-[browser] 
+[browser]
 gatherUsageStats = false
+
+[theme]
+base = "dark"
+primaryColor = "#D9B45F"
+backgroundColor = "#0A1119"
+secondaryBackgroundColor = "#112820"
+textColor = "#F5F4E9"
+font = "sans serif"

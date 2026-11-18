@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import sqlite3
 from functools import partial
 from ayurschedule import auth, auth_ui
+from ayurschedule.ui_theme import apply_theme
 from ayurschedule.access import ClinicAccess
 from ayurschedule.database import (
     init_db, fetch_clinic_state, add_booking, add_therapist,
@@ -24,6 +25,7 @@ st.set_page_config(
     page_icon="🌿",
     layout="wide"
 )
+apply_theme()
 
 # Initialize SQLite database on startup
 init_db()
@@ -54,8 +56,13 @@ remove_therapy = partial(clinic.call, "remove_therapy")
 import_hospital_workbook = partial(clinic.call, "import_hospital_workbook")
 export_clinic_workbook = partial(clinic.call, "export_clinic_workbook")
 
-st.title("🌿 AyurSchedule — Intelligent Panchakarma Therapy Scheduling System")
-st.caption("Optimization Techniques for Intelligent Systems | Production Clinic Management & Memetic Genetic Optimizer")
+st.markdown("""
+<div class="ayur-hero">
+  <div class="ayur-eyebrow">Intelligent clinic operations</div>
+  <h1>AyurSchedule</h1>
+  <p>Plan Panchakarma care, coordinate your team, and see the whole clinic day at a glance.</p>
+</div>
+""", unsafe_allow_html=True)
 
 # Reserve this position even when there is no notice, so tabs never move on reruns.
 notice_area = st.empty()
@@ -167,6 +174,14 @@ if st.session_state.get("schedule_context") != schedule_context:
     st.session_state.pop("latest_result", None)
     st.session_state["schedule_context"] = schedule_context
 
+st.markdown('<div class="ayur-section-label">Clinic overview</div>', unsafe_allow_html=True)
+overview = st.columns(4)
+overview[0].metric("Patients today", len({booking["patient_id"] for booking in state["bookings"]}))
+overview[1].metric("Active practitioners", len(state["therapists"]))
+overview[2].metric("Treatment rooms", len(state["rooms"]))
+overview[3].metric("Bookings for date", len(state["bookings"]))
+st.caption(f"Schedule date: {schedule_date}")
+
 tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📅 Live Schedule & Gantt Chart",
     "🏥 Clinic Resource & Patient Registry",
@@ -265,7 +280,14 @@ def render_schedule_content(run_opt, state, schedule_ready, missing_equipment, m
             constraintext="inside", cliponaxis=True,
             insidetextfont={"color": "white"}
         )
-        fig_gantt.update_layout(uniformtext_minsize=10, uniformtext_mode="hide")
+        fig_gantt.update_layout(
+            uniformtext_minsize=10, uniformtext_mode="hide",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font={"color": "#dce8dd"}, title_font={"color": "#f5f4e9", "size": 17},
+            margin={"l": 15, "r": 20, "t": 58, "b": 22},
+            legend_title_text="Dosha",
+        )
+        fig_gantt.update_xaxes(showgrid=True, gridcolor="rgba(187, 209, 190, 0.12)", zeroline=False)
         fig_gantt.update_yaxes(autorange="reversed")
         st.plotly_chart(fig_gantt, use_container_width=True)
 
@@ -460,18 +482,23 @@ with tab3:
         fig_conv.add_trace(go.Scatter(
             x=[h["generation"] for h in r_ga["history"]],
             y=[h["best_penalty"] for h in r_ga["history"]],
-            mode="lines", name="Standard GA"
+            mode="lines", name="Standard GA", line={"color": "#58b9c5", "width": 3}
         ))
         fig_conv.add_trace(go.Scatter(
             x=[h["generation"] for h in r_memetic["history"]],
             y=[h["best_penalty"] for h in r_memetic["history"]],
-            mode="lines", name="Memetic GA (Proposed)"
+            mode="lines", name="Memetic GA (Proposed)", line={"color": "#dfb45e", "width": 3}
         ))
         fig_conv.update_layout(
             title="Convergence Trajectory: Standard GA vs. Memetic GA",
             xaxis_title="Generation",
-            yaxis_title="Best Total Penalty Score"
+            yaxis_title="Best Total Penalty Score",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font={"color": "#dce8dd"}, title_font={"color": "#f5f4e9", "size": 17},
+            margin={"l": 15, "r": 20, "t": 58, "b": 20},
         )
+        fig_conv.update_xaxes(showgrid=True, gridcolor="rgba(187, 209, 190, 0.12)", zeroline=False)
+        fig_conv.update_yaxes(showgrid=True, gridcolor="rgba(187, 209, 190, 0.12)", zeroline=False)
         st.plotly_chart(fig_conv, use_container_width=True)
 
 with tab4:
