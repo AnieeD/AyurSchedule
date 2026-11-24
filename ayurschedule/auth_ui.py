@@ -95,7 +95,7 @@ def require_login():
 
 def account_sidebar(user):
     with st.sidebar:
-        st.markdown('<div class="ayur-brand"><span class="ayur-brand-mark">✦</span> AyurSchedule</div>', unsafe_allow_html=True)
+        st.markdown('<div class="ayur-brand"><span class="ayur-brand-mark">🌿</span> AyurSchedule</div>', unsafe_allow_html=True)
         st.caption("YOUR ACCOUNT")
         st.write(f"Signed in as **{user['full_name']}**")
         st.caption("Hospital Member" if user["role"] == "hospital" else "Patient")
